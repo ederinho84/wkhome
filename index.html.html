@@ -1,0 +1,3067 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Mein Weinkeller – Digitales Weinregal</title>
+
+  <!-- iPhone Home-Bildschirm (PWA) & Safari Vollbild-Konfiguration -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Weinkeller" />
+  <meta name="theme-color" content="#140f0c" />
+  <link id="appFavicon" rel="icon" type="image/png" />
+  <link id="appTouchIcon" rel="apple-touch-icon" />
+
+  <style>
+    /* =====================================================================
+       1. DESIGN-TOKENS & BASIS-STYLES (DUNKLES WEINKELLER-AMBIENTE)
+       ===================================================================== */
+    :root {
+      --bg-espresso: #140f0c;
+      --bg-card: #1f1713;
+      --bg-elevated: #2a1f1a;
+      --bg-input: #17110e;
+      --border-wood: #3b2d25;
+      --border-gold: rgba(212, 163, 89, 0.45);
+      --gold: #d4a359;
+      --gold-light: #e5b870;
+      --gold-dark: #a97832;
+      --burgundy: #7a2634;
+      --burgundy-light: #9c3345;
+      --cream: #f5efe6;
+      --muted: #a89b8e;
+      --success: #34d399;
+      --danger: #f87171;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-espresso);
+      color: var(--cream);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(212, 163, 89, 0.09) 0%, transparent 55%),
+        radial-gradient(circle at 10% 35%, rgba(122, 38, 52, 0.11) 0%, transparent 45%);
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
+
+    button, input, select, textarea, label {
+      font-family: inherit;
+    }
+
+    /* Verhindert automatisches Heranzoomen in iOS Safari beim Antippen von Feldern */
+    input, select, textarea {
+      font-size: 16px;
+    }
+
+    /* =====================================================================
+       2. KOPFZEILE & AKTIONSLEISTE
+       ===================================================================== */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(20, 15, 12, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-wood);
+      padding-top: env(safe-area-inset-top);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 14px;
+    }
+
+    .header-inner {
+      padding-top: 12px;
+      padding-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--burgundy), #47141d);
+      border: 1px solid var(--border-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .brand-title {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--cream);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-sub {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .header-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-wood);
+      color: var(--cream);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .pill-btn:active {
+      transform: scale(0.97);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fbbf24;
+      display: inline-block;
+    }
+
+    .status-dot.is-ready {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Aktionsleiste: Kamera, Foto wählen, Manuell */
+    .action-bar {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 0.85fr;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 10px;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      text-align: center;
+      transition: transform 0.12s, background 0.15s;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #140f0c;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(212, 163, 89, 0.25);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border-color: var(--border-wood);
+      color: var(--cream);
+    }
+
+    .btn-danger {
+      background: rgba(122, 38, 52, 0.35);
+      border-color: rgba(248, 113, 113, 0.4);
+      color: #fecaca;
+    }
+
+    /* Zugängliche versteckte File-Inputs ohne display:none (iOS-kompatibel) */
+    .sr-file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+      opacity: 0;
+    }
+
+    /* =====================================================================
+       3. HAUPTBEREICH, 2x2 STATISTIK & FILTER
+       ===================================================================== */
+    .main-content {
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (min-width: 820px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .stat-badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.7rem;
+      white-space: nowrap;
+    }
+
+    .stat-value-row {
+      margin-top: 6px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-value {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .stat-value.is-gold {
+      color: var(--gold);
+    }
+
+    .stat-unit {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .dist-bar {
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--bg-input);
+      overflow: hidden;
+      display: flex;
+      gap: 2px;
+      margin-top: 8px;
+    }
+
+    /* Filter- & Sortier-Box */
+    .controls-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    @media (min-width: 768px) {
+      .controls-row {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+
+    .text-input, .select-input, .textarea-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-md);
+      color: var(--cream);
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .text-input:focus, .select-input:focus, .textarea-input:focus {
+      border-color: var(--gold);
+    }
+
+    .search-input {
+      padding-left: 36px;
+      padding-right: 34px;
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      padding: 6px;
+      cursor: pointer;
+    }
+
+    .sort-view-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    @media (min-width: 560px) {
+      .sort-view-group {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .sort-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-md);
+      padding: 0 10px;
+      flex: 1;
+    }
+
+    .sort-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .sort-box select {
+      border: none;
+      background: transparent;
+      padding: 10px 0;
+      color: var(--cream);
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .view-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-md);
+      padding: 3px;
+    }
+
+    .view-tab {
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .view-tab.is-active {
+      background: var(--bg-elevated);
+      color: var(--gold);
+      border-color: var(--border-gold);
+    }
+
+    .type-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(59, 45, 37, 0.7);
+    }
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .type-pill.is-active {
+      background: rgba(212, 163, 89, 0.16);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .type-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* =====================================================================
+       4. VISUELLES EICHENHOLZ-WEINREGAL & FLASCHEN-DESIGN
+       ===================================================================== */
+    .rack-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .shelf-unit {
+      position: relative;
+    }
+
+    .shelf-niche {
+      background: linear-gradient(
+        180deg,
+        rgba(12, 9, 7, 0.95) 0%,
+        rgba(28, 21, 17, 0.82) 72%,
+        rgba(46, 33, 24, 0.92) 100%
+      );
+      border-top: 1px solid #35271f;
+      border-left: 1px solid #35271f;
+      border-right: 1px solid #35271f;
+      border-radius: 16px 16px 0 0;
+      padding: 16px 12px 10px 12px;
+      box-shadow: inset 0 10px 24px rgba(0, 0, 0, 0.75);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    @media (min-width: 640px) {
+      .shelf-niche {
+        grid-template-columns: repeat(3, 1fr);
+        padding: 20px 18px 12px 18px;
+        gap: 18px;
+      }
+    }
+
+    @media (min-width: 960px) {
+      .shelf-niche {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .oak-plank {
+      height: 20px;
+      border-radius: 0 0 12px 12px;
+      background: linear-gradient(
+        180deg,
+        #5b412e 0%,
+        #412d1f 25%,
+        #2b1d13 80%,
+        #180f09 100%
+      );
+      border-top: 1px solid rgba(212, 163, 89, 0.45);
+      border-bottom: 1px solid #0b0705;
+      box-shadow:
+        0 14px 26px -6px rgba(0, 0, 0, 0.88),
+        inset 0 1px 0 rgba(255, 232, 198, 0.18);
+    }
+
+    .bottle-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+
+    .bottle-slot.is-empty {
+      opacity: 0.52;
+    }
+
+    .slot-controls {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .price-tag {
+      padding: 4px 7px;
+      border-radius: 8px;
+      background: rgba(20, 15, 12, 0.95);
+      border: 1px solid var(--border-gold);
+      color: var(--gold);
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(20, 15, 12, 0.95);
+      border: 1px solid var(--border-wood);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .qty-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-btn.minus:active {
+      background: var(--burgundy);
+      color: #fff;
+    }
+
+    .qty-btn.plus:active {
+      background: var(--gold);
+      color: #140f0c;
+    }
+
+    .qty-count {
+      padding: 0 5px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .bottle-trigger {
+      width: 100%;
+      max-width: 152px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .bottle-neck {
+      width: 28px;
+      height: 46px;
+      border-radius: 5px 5px 0 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bottle-capsule {
+      width: 100%;
+      height: 20px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+    }
+
+    .bottle-shoulder {
+      width: 96px;
+      height: 18px;
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bottle-body {
+      width: 96px;
+      height: 146px;
+      border-radius: 0 0 10px 10px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.7);
+      position: relative;
+    }
+
+    .wine-label {
+      margin: auto 0;
+      background: #f5efe6;
+      color: #1c1613;
+      border-radius: 6px;
+      border: 1px solid #d4c4ae;
+      padding: 6px 5px;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .label-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      color: #6b5a4c;
+      border-bottom: 1px solid #dfd3c2;
+      padding-bottom: 2px;
+      margin-bottom: 4px;
+    }
+
+    .label-name {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #18120f;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.4em;
+    }
+
+    .label-bottom {
+      margin-top: 4px;
+      padding-top: 3px;
+      border-top: 1px solid #dfd3c2;
+    }
+
+    .label-stars {
+      font-size: 0.68rem;
+      color: #b4781f;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .label-region {
+      font-size: 0.56rem;
+      color: #5e4f42;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .bottle-punt {
+      height: 5px;
+      border-radius: 999px;
+      opacity: 0.45;
+    }
+
+    /* =====================================================================
+       5. KELLERLISTE (KOMPAKTE KARTENANSICHT)
+       ===================================================================== */
+    .list-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .list-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-wood);
+      border-radius: var(--radius-lg);
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .list-card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .list-thumb {
+      width: 48px;
+      height: 62px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border-wood);
+      background: #000;
+      flex-shrink: 0;
+    }
+
+    .list-color-bar {
+      width: 10px;
+      height: 60px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    .list-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-badges {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .badge-vintage {
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      color: var(--gold);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .badge-type {
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--bg-elevated);
+      color: var(--cream);
+    }
+
+    .list-title {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .list-meta {
+      margin: 3px 0 0 0;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .list-notes {
+      margin: 4px 0 0 0;
+      font-size: 0.76rem;
+      color: rgba(245, 239, 230, 0.85);
+    }
+
+    .list-bottom {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(59, 45, 37, 0.7);
+    }
+
+    .list-metrics {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .list-stars {
+      color: var(--gold);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .list-price {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .list-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-btn {
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      color: var(--cream);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .mini-btn.del {
+      color: #fca5a5;
+      border-color: rgba(248, 113, 113, 0.35);
+    }
+
+    /* =====================================================================
+       6. MODALS (STRIKT display: none !important IM GESCHLOSSENEN ZUSTAND)
+       ===================================================================== */
+    .modal-backdrop {
+      display: none !important;
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 14px;
+      overflow-y: auto;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.is-open {
+      display: flex !important;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 540px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-wood);
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      margin: auto;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 14px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-wood);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .modal-sub {
+      margin: 2px 0 0 0;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      color: var(--cream);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    @media (min-width: 520px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .type-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    @media (min-width: 480px) {
+      .type-selector {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .type-opt {
+      padding: 9px 8px;
+      border-radius: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-wood);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .type-opt.is-selected {
+      background: rgba(212, 163, 89, 0.16);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .stars-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .star-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.65rem;
+      line-height: 1;
+      padding: 2px;
+      cursor: pointer;
+      color: var(--border-wood);
+    }
+
+    .star-btn.is-active {
+      color: var(--gold);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-wood);
+    }
+
+    /* KI-Scanner Vorschau & Laser-Animation */
+    .scanner-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-gold);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .scanner-preview {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-wood);
+      max-height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-preview img {
+      max-height: 210px;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .scan-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 15, 12, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      text-align: center;
+    }
+
+    @keyframes scanSweep {
+      0% { top: 10%; }
+      50% { top: 86%; }
+      100% { top: 10%; }
+    }
+
+    .scan-beam {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold), #fff4d6, var(--gold), transparent);
+      box-shadow: 0 0 12px 2px rgba(212, 163, 89, 0.85);
+      animation: scanSweep 1.8s ease-in-out infinite;
+    }
+
+    .info-banner {
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      background: rgba(212, 163, 89, 0.12);
+      border: 1px solid var(--border-gold);
+      color: var(--cream);
+    }
+
+    .info-banner.is-error {
+      background: rgba(122, 38, 52, 0.35);
+      border-color: rgba(248, 113, 113, 0.45);
+      color: #fecaca;
+    }
+
+    .info-banner.is-success {
+      background: rgba(6, 78, 59, 0.45);
+      border-color: rgba(52, 211, 153, 0.45);
+      color: #a7f3d0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Toast Benachrichtigungen */
+    .toast-stack {
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      max-width: 460px;
+      width: 100%;
+      background: rgba(31, 23, 19, 0.97);
+      border: 1px solid var(--border-gold);
+      color: var(--cream);
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-footer {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(59, 45, 37, 0.7);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Versteckte File-Inputs (zugänglich für <label for="..."> auf iOS Safari) -->
+  <input id="cameraInput" class="sr-file-input" type="file" accept="image/*" capture="environment" onchange="handlePhotoInputChange(event)" />
+  <input id="galleryInput" class="sr-file-input" type="file" accept="image/*" onchange="handlePhotoInputChange(event)" />
+  <input id="backupFileInput" class="sr-file-input" type="file" accept=".json,application/json" onchange="handleBackupImportChange(event)" />
+
+  <!-- ==================== KOPFZEILE ==================== -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a359" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 2h6v3l2 3v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-3V2z"/>
+              <path d="M9 12h6"/>
+              <path d="M9 16h6"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">Mein Weinkeller</h1>
+            <p class="brand-sub">Digitales Weinregal &middot; iOS &amp; KI-Vision</p>
+          </div>
+        </div>
+
+        <div class="header-pills">
+          <button type="button" class="pill-btn" onclick="openScannerSettingsModal()">
+            <span>⚙️ KI-Scanner</span>
+            <span id="scannerStatusDot" class="status-dot"></span>
+          </button>
+          <button type="button" class="pill-btn" onclick="openBackupModal()">
+            <span>💾 Backup</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Aktionsleiste: Echtes <label for="..."> für iOS Kamera & Fotomediathek -->
+      <div class="action-bar">
+        <label for="cameraInput" class="btn btn-gold">
+          <span>📸 Flasche abfotografieren</span>
+        </label>
+        <label for="galleryInput" class="btn btn-secondary">
+          <span>🖼️ Foto wählen</span>
+        </label>
+        <button type="button" class="btn btn-secondary" onclick="openWineFormModal()">
+          <span>+ Manuell</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== HAUPTBEREICH ==================== -->
+  <main class="container main-content">
+    <!-- 2x2 Statistik-Karten -->
+    <section class="stats-grid" aria-label="Keller-Statistik">
+      <div class="stat-card">
+        <div class="stat-top">
+          <span>Gesamtflaschen</span>
+          <span id="statTypesBadge" class="stat-badge">0 Sorten</span>
+        </div>
+        <div class="stat-value-row">
+          <span id="statTotalBottles" class="stat-value">0</span>
+          <span class="stat-unit">Flaschen</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <span>Gesamtwert Keller</span>
+          <span class="stat-badge">EUR</span>
+        </div>
+        <div class="stat-value-row">
+          <span id="statTotalValue" class="stat-value is-gold">0,00 €</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <span>&Oslash; Preis / Flasche</span>
+          <span id="statAvgStars" class="stat-badge">&Oslash; 0,0 ★</span>
+        </div>
+        <div class="stat-value-row">
+          <span id="statAvgPrice" class="stat-value">0,00 €</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <span>Top-Weine (4–5 ★)</span>
+          <span id="statTopPercent" class="stat-badge">0 %</span>
+        </div>
+        <div class="stat-value-row">
+          <span id="statTopCount" class="stat-value">0</span>
+          <span class="stat-unit">Flaschen</span>
+        </div>
+        <div id="statDistBar" class="dist-bar"></div>
+      </div>
+    </section>
+
+    <!-- Suche, Sortierung & Ansicht -->
+    <section class="controls-card">
+      <div class="controls-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input
+            id="searchInput"
+            type="text"
+            class="text-input search-input"
+            placeholder="Suche nach Name, Weingut, Region, Vanille..."
+            oninput="handleSearchChange(this.value)"
+          />
+          <button id="clearSearchBtn" type="button" class="clear-search hidden" onclick="clearSearchInput()" aria-label="Suche löschen">✕</button>
+        </div>
+
+        <div class="sort-view-group">
+          <div class="sort-box">
+            <label for="sortSelect" class="sort-label">Sortieren:</label>
+            <select id="sortSelect" onchange="handleSortChange(this.value)">
+              <option value="quality-desc">Qualität: Beste zuerst</option>
+              <option value="price-desc">Preis: Hoch zu Niedrig</option>
+              <option value="price-asc">Preis: Niedrig zu Hoch</option>
+              <option value="vintage-asc">Jahrgang: Älteste zuerst</option>
+              <option value="quantity-desc">Bestand: Meiste zuerst</option>
+            </select>
+          </div>
+
+          <div class="view-switcher">
+            <button id="tabRackBtn" type="button" class="view-tab is-active" onclick="switchViewMode('rack')">🪵 Weinregal</button>
+            <button id="tabListBtn" type="button" class="view-tab" onclick="switchViewMode('list')">📋 Kellerliste</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="typeFilterPills" class="type-pills"></div>
+    </section>
+
+    <!-- Weinregal oder Kellerliste -->
+    <section id="cellarViewport" aria-live="polite"></section>
+
+    <footer class="app-footer">
+      <span>Lokal im iPhone gespeichert &middot; KI-Modell: <strong id="footerModelInfo" style="color:var(--gold)">Auto-Fallback</strong></span>
+      <span>Tippe auf eine Flasche für Details &amp; Bearbeitung</span>
+    </footer>
+  </main>
+
+  <!-- ==================== MODAL 1: WEIN FORMULAR & FOTO-ANALYSE ==================== -->
+  <div id="wineFormModal" class="modal-backdrop" onclick="handleBackdropClick(event, 'wineFormModal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="wineFormTitle" class="modal-title">Flasche einlagern</h2>
+          <p class="modal-sub">Etikett abfotografieren oder Daten eingeben</p>
+        </div>
+        <button type="button" class="close-btn" onclick="closeWineFormModal()" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Foto-Scanner-Bereich -->
+        <div class="scanner-box">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span style="font-size:0.74rem; font-weight:700; color:var(--gold); text-transform:uppercase; letter-spacing:0.04em;">
+              ✨ KI-Etiketten- &amp; Preis-Scanner
+            </span>
+            <button type="button" onclick="openScannerSettingsModal()" style="background:none; border:none; color:var(--muted); text-decoration:underline; font-size:0.74rem; cursor:pointer;">
+              ⚙️ API-Key
+            </button>
+          </div>
+
+          <div class="grid-2">
+            <label for="cameraInput" class="btn btn-gold">
+              <span>📸 Kamera starten</span>
+            </label>
+            <label for="galleryInput" class="btn btn-secondary">
+              <span>🖼️ Aus Fotomediathek</span>
+            </label>
+          </div>
+
+          <!-- Komprimierte Bildvorschau -->
+          <div id="photoPreviewBox" class="scanner-preview hidden">
+            <img id="photoPreviewImg" src="" alt="Flaschenfoto" />
+            <button type="button" onclick="removeCurrentPhoto()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.8); color:#fca5a5; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:5px 9px; font-size:0.72rem; cursor:pointer;">
+              Foto entfernen
+            </button>
+            <div id="scanLoadingLayer" class="scan-overlay hidden">
+              <div class="scan-beam"></div>
+              <p id="scanLoadingMain" style="margin:0; font-weight:700; color:var(--gold); font-size:0.9rem;">Sommelier-KI liest Etikett aus...</p>
+              <p id="scanLoadingSub" style="margin:4px 0 0 0; color:var(--muted); font-size:0.76rem;">Suche passendes Gemini-Modell...</p>
+            </div>
+          </div>
+
+          <!-- Hinweis-Banner falls API-Key fehlt oder Fehler auftrat -->
+          <div id="scannerNoticeBanner" class="info-banner hidden"></div>
+
+          <!-- Mehrfach-Erkennung (z. B. Weinrechnung) -->
+          <div id="multiWineBox" class="hidden" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <span id="multiWineTitle" style="font-size:0.78rem; font-weight:700; color:var(--gold);">Mehrere Weine erkannt</span>
+              <button type="button" class="btn btn-gold" style="padding:6px 10px; font-size:0.74rem;" onclick="importAllDetectedBatch()">Alle einlagern</button>
+            </div>
+            <div id="multiWineList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          </div>
+        </div>
+
+        <!-- Formular -->
+        <form id="wineForm" onsubmit="saveWineEntry(event)" style="display:flex; flex-direction:column; gap:11px;">
+          <input type="hidden" id="inputWineId" value="" />
+          <input type="hidden" id="inputWinePhoto" value="" />
+          <input type="hidden" id="inputWineType" value="Rotwein" />
+          <input type="hidden" id="inputWineStars" value="4" />
+
+          <div class="form-group">
+            <span class="form-label">Weinart *</span>
+            <div class="type-selector">
+              <button type="button" class="type-opt is-selected" data-wtype="Rotwein" onclick="selectWineType('Rotwein')">
+                <span class="type-dot" style="background:#b83346;"></span> Rotwein
+              </button>
+              <button type="button" class="type-opt" data-wtype="Weißwein" onclick="selectWineType('Weißwein')">
+                <span class="type-dot" style="background:#d4a359;"></span> Weißwein
+              </button>
+              <button type="button" class="type-opt" data-wtype="Rosé" onclick="selectWineType('Rosé')">
+                <span class="type-dot" style="background:#e07a90;"></span> Rosé
+              </button>
+              <button type="button" class="type-opt" data-wtype="Schaumwein" onclick="selectWineType('Schaumwein')">
+                <span class="type-dot" style="background:#e6d7b0;"></span> Schaumwein
+              </button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="inputWineName" class="form-label">Weinname *</label>
+              <input id="inputWineName" type="text" class="text-input" required placeholder="z. B. Viña Alberdi Reserva" />
+            </div>
+            <div class="form-group">
+              <label for="inputWineWinery" class="form-label">Weingut / Bodega</label>
+              <input id="inputWineWinery" type="text" class="text-input" placeholder="z. B. La Rioja Alta" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="form-group">
+              <label for="inputWineVintage" class="form-label">Jahrgang *</label>
+              <input id="inputWineVintage" type="number" class="text-input" min="0" max="2035" value="2021" required />
+            </div>
+            <div class="form-group">
+              <label for="inputWinePrice" class="form-label">Preis (€) *</label>
+              <input id="inputWinePrice" type="number" class="text-input" step="0.01" min="0" value="14.90" required />
+            </div>
+            <div class="form-group">
+              <label for="inputWineQty" class="form-label">Flaschen *</label>
+              <input id="inputWineQty" type="number" class="text-input" min="0" max="999" value="1" required />
+            </div>
+          </div>
+
+          <div class="grid-2" style="background:var(--bg-input); border:1px solid var(--border-wood); border-radius:12px; padding:10px;">
+            <div class="form-group">
+              <span class="form-label">Qualitätsbewertung (1–5 ★)</span>
+              <div class="stars-row">
+                <button type="button" class="star-btn is-active" data-star="1" onclick="selectWineStars(1)">★</button>
+                <button type="button" class="star-btn is-active" data-star="2" onclick="selectWineStars(2)">★</button>
+                <button type="button" class="star-btn is-active" data-star="3" onclick="selectWineStars(3)">★</button>
+                <button type="button" class="star-btn is-active" data-star="4" onclick="selectWineStars(4)">★</button>
+                <button type="button" class="star-btn" data-star="5" onclick="selectWineStars(5)">★</button>
+                <span id="starRatingText" style="font-size:0.75rem; color:var(--gold); font-weight:700; margin-left:4px;">4 ★</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="inputWineRegion" class="form-label">Region / Land</label>
+              <input id="inputWineRegion" type="text" class="text-input" placeholder="z. B. Rioja DOCa, Spanien" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="inputWineNotes" class="form-label">Geschmacksprofil / Notizen (z. B. Barrique, Vanille)</label>
+            <textarea id="inputWineNotes" class="textarea-input" rows="2" placeholder="z. B. 100% amerikanische Eiche, Vanille, Karamell, Waldbeeren"></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeWineFormModal()">Abbrechen</button>
+            <button type="submit" class="btn btn-gold">Im Weinregal speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: ⚙️ KI-SCANNER EINSTELLUNGEN ==================== -->
+  <div id="scannerSettingsModal" class="modal-backdrop" onclick="handleBackdropClick(event, 'scannerSettingsModal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">⚙️ KI-Scanner Einstellungen</h2>
+          <p class="modal-sub">Automatische Modellerkennung &amp; Auto-Fallback</p>
+        </div>
+        <button type="button" class="close-btn" onclick="closeScannerSettingsModal()" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-banner">
+          <strong>So aktivierst du die automatische Etiketten-Erkennung:</strong><br />
+          1. Erstelle unter <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--gold); font-weight:700;">aistudio.google.com/apikey</a> einen kostenlosen Google API-Key.<br />
+          2. Füge den Key (beginnt mit <code>AQ.</code> oder <code>AIza</code>) hier ein.<br />
+          3. Die App prüft alle verfügbaren Gemini-Modelle automatisch und weicht bei Überlastung (HTTP 503) selbstständig auf ein freies Modell aus.
+        </div>
+
+        <div class="form-group">
+          <label for="geminiApiKeyInput" class="form-label">Google AI Studio API-Key</label>
+          <div style="display:flex; gap:6px;">
+            <input
+              id="geminiApiKeyInput"
+              type="password"
+              class="text-input"
+              placeholder="AQ... oder AIzaSy..."
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <button type="button" id="toggleKeyVisBtn" class="btn btn-secondary" style="white-space:nowrap;" onclick="toggleApiKeyMask()">Zeigen</button>
+          </div>
+        </div>
+
+        <div id="apiTestFeedback" class="info-banner hidden"></div>
+
+        <div class="modal-footer" style="justify-content:space-between; flex-wrap:wrap;">
+          <div style="display:flex; gap:6px;">
+            <button type="button" id="testKeyBtn" class="btn btn-secondary" onclick="testGeminiApiKey()">Verbindung testen</button>
+            <button type="button" class="btn btn-danger" onclick="deleteStoredApiKey()">Löschen</button>
+          </div>
+          <button type="button" class="btn btn-gold" onclick="saveGeminiApiKey()">Key speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: FLASCHEN-DETAILS ==================== -->
+  <div id="wineDetailModal" class="modal-backdrop" onclick="handleBackdropClick(event, 'wineDetailModal')">
+    <div id="wineDetailContent" class="modal-card"></div>
+  </div>
+
+  <!-- ==================== MODAL 4: 💾 BACKUP & RESET ==================== -->
+  <div id="backupModal" class="modal-backdrop" onclick="handleBackdropClick(event, 'backupModal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">💾 Backup &amp; Keller-Verwaltung</h2>
+          <p class="modal-sub">Weinkeller sichern, wiederherstellen oder zurücksetzen</p>
+        </div>
+        <button type="button" class="close-btn" onclick="closeBackupModal()" aria-label="Schließen">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <button type="button" class="btn btn-gold" style="width:100%; justify-content:space-between;" onclick="exportCellarJson()">
+          <span>📥 Backup als .json Datei herunterladen</span>
+          <span>&rarr;</span>
+        </button>
+
+        <label for="backupFileInput" class="btn btn-secondary" style="width:100%; justify-content:space-between;">
+          <span>📤 Backup aus .json Datei laden</span>
+          <span style="color:var(--gold);">Datei wählen</span>
+        </label>
+
+        <div class="grid-2" style="padding-top:8px; border-top:1px solid var(--border-wood);">
+          <button type="button" class="btn btn-secondary" onclick="openConfirmDialog('reset')">
+            Startbestand wiederherstellen
+          </button>
+          <button type="button" class="btn btn-danger" onclick="openConfirmDialog('clear')">
+            Regal komplett leeren
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 5: BESTÄTIGUNGSDIALOG ==================== -->
+  <div id="confirmModal" class="modal-backdrop" onclick="handleBackdropClick(event, 'confirmModal')">
+    <div class="modal-card" style="max-width:400px;">
+      <div class="modal-header">
+        <h2 id="confirmModalTitle" class="modal-title">Bestätigung</h2>
+        <button type="button" class="close-btn" onclick="closeConfirmDialog()" aria-label="Schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalText" style="margin:0; font-size:0.88rem; color:var(--muted);"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeConfirmDialog()">Abbrechen</button>
+          <button type="button" id="confirmModalOkBtn" class="btn btn-danger">Bestätigen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast-Container -->
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+  <!-- ==================== REINES VANILLA JAVASCRIPT ==================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =====================================================================
+      // 1. KONSTANTEN & STARTBESTAND
+      // =====================================================================
+      var STORAGE_WINES_KEY = 'weinkeller_app_wines_v3';
+      var STORAGE_APIKEY_KEY = 'weinkeller_app_apikey_v3';
+      var STORAGE_MODEL_KEY = 'weinkeller_app_model_v3';
+
+      var PREFERRED_MODELS = [
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-2.0-flash-lite',
+        'gemini-2.5-pro'
+      ];
+
+      var WINE_STYLES = {
+        'Rotwein': {
+          dot: '#b83346',
+          capsule: '#8e1f30',
+          capsuleLight: '#c43b50',
+          glassDark: '#17080b',
+          glassMid: '#3d121a',
+          punt: '#9e2638',
+          short: 'ROT'
+        },
+        'Weißwein': {
+          dot: '#d4a359',
+          capsule: '#c4923f',
+          capsuleLight: '#e8be72',
+          glassDark: '#232010',
+          glassMid: '#4c441e',
+          punt: '#d4a359',
+          short: 'WEISS'
+        },
+        'Rosé': {
+          dot: '#e07a90',
+          capsule: '#c95f76',
+          capsuleLight: '#f094a8',
+          glassDark: '#261419',
+          glassMid: '#542934',
+          punt: '#e07a90',
+          short: 'ROSÉ'
+        },
+        'Schaumwein': {
+          dot: '#e6d7b0',
+          capsule: '#bfa872',
+          capsuleLight: '#f2e4c1',
+          glassDark: '#161c15',
+          glassMid: '#2d3b2b',
+          punt: '#e6d7b0',
+          short: 'SEKT'
+        }
+      };
+
+      var STARTER_WINES = [
+        {
+          id: 'wine-starter-1',
+          winery: 'La Rioja Alta',
+          name: 'Viña Alberdi Reserva',
+          vintage: 2019,
+          type: 'Rotwein',
+          region: 'Rioja DOCa, Spanien',
+          price: 15.90,
+          quantity: 3,
+          stars: 5,
+          notes: '100% amerikanische Eiche, Vanille, Karamell, Waldbeeren',
+          photo: ''
+        },
+        {
+          id: 'wine-starter-2',
+          winery: 'Bodegas Beronia',
+          name: 'Rioja Reserva',
+          vintage: 2019,
+          type: 'Rotwein',
+          region: 'Rioja Alta, Spanien',
+          price: 13.90,
+          quantity: 4,
+          stars: 4,
+          notes: 'Mischfass US/FR Eiche, Pflaume, Vanille, Zimt',
+          photo: ''
+        },
+        {
+          id: 'wine-starter-3',
+          winery: '',
+          name: 'Palador Crianza',
+          vintage: 2023,
+          type: 'Rotwein',
+          region: 'Rioja Alavesa, Spanien',
+          price: 11.50,
+          quantity: 6,
+          stars: 4,
+          notes: 'Alte Reben, Kirsche, Vanille, Zedernholz',
+          photo: ''
+        },
+        {
+          id: 'wine-starter-4',
+          winery: 'Juan Gil',
+          name: 'La Gran Cuvée',
+          vintage: 2023,
+          type: 'Rotwein',
+          region: 'Vino de España, Spanien',
+          price: 9.90,
+          quantity: 6,
+          stars: 4,
+          notes: 'Monastrell, Garnacha & Tempranillo, dunkle Beeren, Würze',
+          photo: ''
+        },
+        {
+          id: 'wine-starter-5',
+          winery: 'Juan Gil',
+          name: 'Silver Label 12 Meses',
+          vintage: 2021,
+          type: 'Rotwein',
+          region: 'Jumilla DOP, Spanien',
+          price: 14.90,
+          quantity: 2,
+          stars: 5,
+          notes: '100% Monastrell, Cassis, Espresso, satte Vanille',
+          photo: ''
+        },
+        {
+          id: 'wine-starter-6',
+          winery: '',
+          name: 'Siete Valles Chardonnay',
+          vintage: 2025,
+          type: 'Weißwein',
+          region: 'Somontano, Spanien',
+          price: 9.50,
+          quantity: 2,
+          stars: 3,
+          notes: 'Teilweise Barrique, Exotik, feiner Schmelz',
+          photo: ''
+        }
+      ];
+
+      var appState = {
+        wines: [],
+        viewMode: 'rack',
+        sortBy: 'quality-desc',
+        filterType: 'Alle',
+        searchQuery: '',
+        lastCompressedBase64: '',
+        detectedBatch: []
+      };
+
+      // =====================================================================
+      // 2. HILFSFUNKTIONEN & FEHLERSCHUTZ
+      // =====================================================================
+      function showToast(msg, variant) {
+        try {
+          var stack = document.getElementById('toastStack');
+          if (!stack) return;
+          var item = document.createElement('div');
+          item.className = 'toast-item';
+          var dotColor = variant === 'error' ? '#f87171' : (variant === 'success' ? '#34d399' : '#d4a359');
+          item.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;"></span><span>' + escapeHtml(msg) + '</span>';
+          stack.appendChild(item);
+          setTimeout(function () {
+            if (item && item.parentNode) {
+              item.parentNode.removeChild(item);
+            }
+          }, 3400);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      window.onerror = function (message) {
+        showToast('Hinweis: ' + message, 'error');
+        return false;
+      };
+
+      function escapeHtml(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatEuro(amount) {
+        var num = Number(amount) || 0;
+        return num.toFixed(2).replace('.', ',') + ' €';
+      }
+
+      function renderStarsString(count) {
+        var s = Math.max(1, Math.min(5, Math.round(Number(count) || 3)));
+        return '★'.repeat(s) + '☆'.repeat(5 - s);
+      }
+
+      function getDisplayTitle(wine) {
+        if (wine.winery && wine.name) {
+          return wine.winery + ' – ' + wine.name;
+        }
+        return wine.name || wine.winery || 'Unbenannter Wein';
+      }
+
+      function saveWinesToDisk() {
+        try {
+          localStorage.setItem(STORAGE_WINES_KEY, JSON.stringify(appState.wines));
+        } catch (err) {
+          showToast('Speicher voll – bitte Backup exportieren.', 'error');
+        }
+      }
+
+      function loadWinesFromDisk() {
+        try {
+          var raw = localStorage.getItem(STORAGE_WINES_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              appState.wines = parsed;
+              return;
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        appState.wines = JSON.parse(JSON.stringify(STARTER_WINES));
+        saveWinesToDisk();
+      }
+
+      function getStoredApiKey() {
+        try {
+          return (localStorage.getItem(STORAGE_APIKEY_KEY) || '').replace(/\s+/g, '');
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function updateScannerStatusUI() {
+        try {
+          var key = getStoredApiKey();
+          var dot = document.getElementById('scannerStatusDot');
+          var footerInfo = document.getElementById('footerModelInfo');
+          var savedModel = localStorage.getItem(STORAGE_MODEL_KEY) || 'Auto-Fallback';
+          if (dot) {
+            if (key) {
+              dot.classList.add('is-ready');
+            } else {
+              dot.classList.remove('is-ready');
+            }
+          }
+          if (footerInfo) {
+            footerInfo.textContent = key ? savedModel : 'Kein Key';
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function generateHomeScreenIcons() {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = 180;
+          canvas.height = 180;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#1f1713';
+          ctx.fillRect(0, 0, 180, 180);
+          ctx.strokeStyle = '#d4a359';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(12, 12, 156, 156);
+          ctx.fillStyle = '#d4a359';
+          ctx.fillRect(80, 28, 20, 32);
+          ctx.fillRect(64, 60, 52, 92);
+          ctx.fillStyle = '#f5efe6';
+          ctx.fillRect(70, 86, 40, 42);
+          var url = canvas.toDataURL('image/png');
+          var fav = document.getElementById('appFavicon');
+          var touch = document.getElementById('appTouchIcon');
+          if (fav) fav.href = url;
+          if (touch) touch.href = url;
+        } catch (e) {
+          // Optional
+        }
+      }
+
+      // =====================================================================
+      // 3. FILTERUNG, SORTIERUNG & RENDERING
+      // =====================================================================
+      function getVisibleWines() {
+        var q = appState.searchQuery.trim().toLowerCase();
+        var list = appState.wines.filter(function (w) {
+          if (appState.filterType !== 'Alle' && w.type !== appState.filterType) {
+            return false;
+          }
+          if (q) {
+            var hay = [
+              w.name,
+              w.winery,
+              w.region,
+              w.notes,
+              w.type,
+              String(w.vintage || '')
+            ].join(' ').toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+          }
+          return true;
+        });
+
+        list.sort(function (a, b) {
+          switch (appState.sortBy) {
+            case 'quality-desc':
+              return (b.stars - a.stars) || (b.price - a.price);
+            case 'price-desc':
+              return (b.price - a.price) || (b.stars - a.stars);
+            case 'price-asc':
+              return (a.price - b.price) || (b.stars - a.stars);
+            case 'vintage-asc':
+              return (a.vintage || 9999) - (b.vintage || 9999);
+            case 'quantity-desc':
+              return (b.quantity - a.quantity) || (b.stars - a.stars);
+            default:
+              return 0;
+          }
+        });
+
+        return list;
+      }
+
+      function renderStats() {
+        var totalBottles = 0;
+        var totalValue = 0;
+        var weightedStars = 0;
+        var topBottles = 0;
+        var counts = { 'Rotwein': 0, 'Weißwein': 0, 'Rosé': 0, 'Schaumwein': 0 };
+
+        appState.wines.forEach(function (w) {
+          var qty = Math.max(0, Number(w.quantity) || 0);
+          var price = Math.max(0, Number(w.price) || 0);
+          var stars = Math.max(1, Math.min(5, Number(w.stars) || 3));
+
+          totalBottles += qty;
+          totalValue += qty * price;
+          weightedStars += qty * stars;
+          if (stars >= 4) topBottles += qty;
+          if (counts[w.type] !== undefined) {
+            counts[w.type] += qty;
+          }
+        });
+
+        var avgPrice = totalBottles > 0 ? totalValue / totalBottles : 0;
+        var avgStars = totalBottles > 0 ? (weightedStars / totalBottles).toFixed(1).replace('.', ',') : '0,0';
+        var topPct = totalBottles > 0 ? Math.round((topBottles / totalBottles) * 100) : 0;
+
+        document.getElementById('statTypesBadge').textContent = appState.wines.length + ' Sorten';
+        document.getElementById('statTotalBottles').textContent = totalBottles;
+        document.getElementById('statTotalValue').textContent = formatEuro(totalValue);
+        document.getElementById('statAvgPrice').textContent = formatEuro(avgPrice);
+        document.getElementById('statAvgStars').textContent = 'Ø ' + avgStars + ' ★';
+        document.getElementById('statTopCount').textContent = topBottles;
+        document.getElementById('statTopPercent').textContent = topPct + ' %';
+
+        var bar = document.getElementById('statDistBar');
+        if (totalBottles === 0) {
+          bar.innerHTML = '';
+        } else {
+          bar.innerHTML = Object.keys(WINE_STYLES).map(function (t) {
+            var c = counts[t] || 0;
+            if (c === 0) return '';
+            var pct = (c / totalBottles) * 100;
+            return '<div style="width:' + pct + '%;background:' + WINE_STYLES[t].dot + ';"></div>';
+          }).join('');
+        }
+      }
+
+      function renderTypePills() {
+        var types = ['Alle', 'Rotwein', 'Weißwein', 'Rosé', 'Schaumwein'];
+        var container = document.getElementById('typeFilterPills');
+
+        container.innerHTML = types.map(function (t) {
+          var isActive = appState.filterType === t;
+          var count = appState.wines
+            .filter(function (w) { return t === 'Alle' || w.type === t; })
+            .reduce(function (sum, w) { return sum + (Number(w.quantity) || 0); }, 0);
+          var dot = t !== 'Alle'
+            ? '<span class="type-dot" style="background:' + WINE_STYLES[t].dot + ';"></span>'
+            : '';
+
+          return '<button type="button" class="type-pill' + (isActive ? ' is-active' : '') + '" onclick="filterByWineType(\'' + t + '\')">' +
+            dot + '<span>' + t + ' (' + count + ')</span></button>';
+        }).join('');
+
+        document.getElementById('tabRackBtn').className = 'view-tab' + (appState.viewMode === 'rack' ? ' is-active' : '');
+        document.getElementById('tabListBtn').className = 'view-tab' + (appState.viewMode === 'list' ? ' is-active' : '');
+      }
+
+      function getShelfColumnsCount() {
+        var w = window.innerWidth || 390;
+        if (w < 640) return 2;
+        if (w < 960) return 3;
+        return 4;
+      }
+
+      function renderViewport() {
+        var viewport = document.getElementById('cellarViewport');
+        var wines = getVisibleWines();
+
+        if (wines.length === 0) {
+          viewport.innerHTML =
+            '<div style="background:var(--bg-card);border:1px solid var(--border-wood);border-radius:18px;padding:28px 16px;text-align:center;">' +
+              '<div style="font-size:2rem;margin-bottom:8px;">🍷</div>' +
+              '<h3 style="margin:0 0 6px 0;font-family:Georgia,serif;">Keine Weine gefunden</h3>' +
+              '<p style="margin:0 0 14px 0;font-size:0.84rem;color:var(--muted);">Passe deine Suche an oder fotografiere eine Flasche ab.</p>' +
+              '<button type="button" class="btn btn-secondary" onclick="resetAllFilters()">Filter zurücksetzen</button>' +
+            '</div>';
+          return;
+        }
+
+        if (appState.viewMode === 'rack') {
+          var cols = getShelfColumnsCount();
+          var rows = [];
+          for (var i = 0; i < wines.length; i += cols) {
+            rows.push(wines.slice(i, i + cols));
+          }
+
+          viewport.innerHTML = '<div class="rack-wrapper">' + rows.map(function (row) {
+            return '<div class="shelf-unit">' +
+              '<div class="shelf-niche">' + row.map(renderBottleSlotHtml).join('') + '</div>' +
+              '<div class="oak-plank"></div>' +
+            '</div>';
+          }).join('') + '</div>';
+        } else {
+          viewport.innerHTML = '<div class="list-stack">' + wines.map(renderListCardHtml).join('') + '</div>';
+        }
+      }
+
+      function renderBottleSlotHtml(w) {
+        var st = WINE_STYLES[w.type] || WINE_STYLES['Rotwein'];
+        var qty = Math.max(0, Number(w.quantity) || 0);
+        var vintage = w.vintage && Number(w.vintage) > 0 ? w.vintage : 'NV';
+        var title = getDisplayTitle(w);
+
+        return '<div class="bottle-slot' + (qty === 0 ? ' is-empty' : '') + '">' +
+          '<div class="slot-controls">' +
+            '<span class="price-tag">' + formatEuro(w.price) + '</span>' +
+            '<div class="qty-stepper">' +
+              '<button type="button" class="qty-btn minus" onclick="changeBottleQty(\'' + w.id + '\', -1)" aria-label="Minus">&minus;</button>' +
+              '<span class="qty-count">' + qty + '&times;</span>' +
+              '<button type="button" class="qty-btn plus" onclick="changeBottleQty(\'' + w.id + '\', 1)" aria-label="Plus">+</button>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="bottle-trigger" onclick="openWineDetailModal(\'' + w.id + '\')">' +
+            '<div class="bottle-neck" style="background:linear-gradient(90deg,' + st.glassDark + ',' + st.glassMid + ',' + st.glassDark + ');">' +
+              '<div class="bottle-capsule" style="background:linear-gradient(90deg,' + st.capsule + ',' + st.capsuleLight + ',' + st.capsule + ');"></div>' +
+            '</div>' +
+            '<div class="bottle-shoulder" style="background:linear-gradient(90deg,' + st.glassDark + ',' + st.glassMid + ',' + st.glassDark + ');"></div>' +
+            '<div class="bottle-body" style="background:linear-gradient(90deg,' + st.glassDark + ',' + st.glassMid + ',' + st.glassDark + ');">' +
+              '<div class="wine-label">' +
+                '<div class="label-top">' +
+                  '<span>' + vintage + '</span>' +
+                  '<span style="color:' + st.capsule + ';">' + st.short + '</span>' +
+                '</div>' +
+                '<p class="label-name">' + escapeHtml(title) + '</p>' +
+                '<div class="label-bottom">' +
+                  '<div class="label-stars">' + renderStarsString(w.stars) + '</div>' +
+                  '<div class="label-region">' + escapeHtml(w.region || w.type) + (w.photo ? ' · 📷' : '') + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="bottle-punt" style="background:' + st.punt + ';"></div>' +
+            '</div>' +
+          '</button>' +
+        '</div>';
+      }
+
+      function renderListCardHtml(w) {
+        var st = WINE_STYLES[w.type] || WINE_STYLES['Rotwein'];
+        var qty = Math.max(0, Number(w.quantity) || 0);
+        var vintage = w.vintage && Number(w.vintage) > 0 ? w.vintage : 'NV';
+        var title = getDisplayTitle(w);
+
+        var media = (w.photo && w.photo.indexOf('data:image/') === 0)
+          ? '<img class="list-thumb" src="' + w.photo + '" alt="' + escapeHtml(title) + '" />'
+          : '<div class="list-color-bar" style="background:linear-gradient(180deg,' + st.capsule + ',' + st.punt + ');"></div>';
+
+        return '<article class="list-card" style="' + (qty === 0 ? 'opacity:0.6;' : '') + '">' +
+          '<div class="list-card-top" onclick="openWineDetailModal(\'' + w.id + '\')" style="cursor:pointer;">' +
+            media +
+            '<div class="list-info">' +
+              '<div class="list-badges">' +
+                '<span class="badge-vintage">' + vintage + '</span>' +
+                '<span class="badge-type">' + escapeHtml(w.type) + '</span>' +
+                '<span class="list-stars">' + renderStarsString(w.stars) + '</span>' +
+              '</div>' +
+              '<h3 class="list-title">' + escapeHtml(title) + '</h3>' +
+              '<p class="list-meta">' + escapeHtml(w.region || 'Region nicht angegeben') + '</p>' +
+              (w.notes ? '<p class="list-notes">' + escapeHtml(w.notes) + '</p>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="list-bottom">' +
+            '<div class="list-metrics">' +
+              '<span class="list-price">' + formatEuro(w.price) + ' <span style="font-weight:400;font-size:0.74rem;color:var(--muted);">/ Fl.</span></span>' +
+              '<div class="qty-stepper">' +
+                '<button type="button" class="qty-btn minus" onclick="changeBottleQty(\'' + w.id + '\', -1)">&minus;</button>' +
+                '<span class="qty-count">' + qty + ' Fl.</span>' +
+                '<button type="button" class="qty-btn plus" onclick="changeBottleQty(\'' + w.id + '\', 1)">+</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="list-actions">' +
+              '<button type="button" class="mini-btn" onclick="openEditWineModal(\'' + w.id + '\')">Bearbeiten</button>' +
+              '<button type="button" class="mini-btn del" onclick="confirmDeleteWine(\'' + w.id + '\')">Löschen</button>' +
+            '</div>' +
+          '</div>' +
+        '</article>';
+      }
+
+      function renderAll() {
+        renderStats();
+        renderTypePills();
+        renderViewport();
+      }
+
+      // =====================================================================
+      // 4. MODAL-STEUERUNG (GLOBAL IM WINDOW-SCOPE)
+      // =====================================================================
+      function showModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('is-open');
+      }
+
+      function hideModal(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('is-open');
+      }
+
+      window.handleBackdropClick = function (event, modalId) {
+        try {
+          if (event && event.target && event.target.id === modalId) {
+            hideModal(modalId);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.handleSearchChange = function (val) {
+        try {
+          appState.searchQuery = val || '';
+          var clr = document.getElementById('clearSearchBtn');
+          if (clr) clr.classList.toggle('hidden', appState.searchQuery.trim().length === 0);
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.clearSearchInput = function () {
+        try {
+          appState.searchQuery = '';
+          var inp = document.getElementById('searchInput');
+          if (inp) inp.value = '';
+          var clr = document.getElementById('clearSearchBtn');
+          if (clr) clr.classList.add('hidden');
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.handleSortChange = function (val) {
+        try {
+          appState.sortBy = val || 'quality-desc';
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.filterByWineType = function (type) {
+        try {
+          appState.filterType = type || 'Alle';
+          renderTypePills();
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.resetAllFilters = function () {
+        try {
+          appState.filterType = 'Alle';
+          window.clearSearchInput();
+          renderTypePills();
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.switchViewMode = function (mode) {
+        try {
+          appState.viewMode = mode === 'list' ? 'list' : 'rack';
+          renderTypePills();
+          renderViewport();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.changeBottleQty = function (id, delta) {
+        try {
+          var wine = appState.wines.find(function (w) { return w.id === id; });
+          if (!wine) return;
+          var cur = Math.max(0, Number(wine.quantity) || 0);
+          var next = Math.max(0, cur + delta);
+          if (next === cur) return;
+          wine.quantity = next;
+          saveWinesToDisk();
+          renderAll();
+
+          var detailModal = document.getElementById('wineDetailModal');
+          if (detailModal && detailModal.classList.contains('is-open')) {
+            window.openWineDetailModal(id);
+          }
+
+          showToast(
+            delta < 0
+              ? '1 Flasche entnommen (' + next + ' übrig)'
+              : '1 Flasche hinzugefügt (' + next + ' im Regal)',
+            delta < 0 ? 'info' : 'success'
+          );
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      // Formular-Modal öffnen & steuern
+      function resetFormFields() {
+        document.getElementById('wineForm').reset();
+        document.getElementById('inputWineId').value = '';
+        document.getElementById('inputWinePhoto').value = '';
+        document.getElementById('inputWineVintage').value = 2021;
+        document.getElementById('inputWinePrice').value = '14.90';
+        document.getElementById('inputWineQty').value = 1;
+        document.getElementById('photoPreviewBox').classList.add('hidden');
+        document.getElementById('scanLoadingLayer').classList.add('hidden');
+        document.getElementById('scannerNoticeBanner').classList.add('hidden');
+        document.getElementById('multiWineBox').classList.add('hidden');
+        appState.lastCompressedBase64 = '';
+        appState.detectedBatch = [];
+        window.selectWineType('Rotwein');
+        window.selectWineStars(4);
+      }
+
+      window.openWineFormModal = function () {
+        try {
+          resetFormFields();
+          document.getElementById('wineFormTitle').textContent = 'Flasche einlagern';
+          showModal('wineFormModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.openEditWineModal = function (id) {
+        try {
+          var wine = appState.wines.find(function (w) { return w.id === id; });
+          if (!wine) return;
+          hideModal('wineDetailModal');
+          resetFormFields();
+
+          document.getElementById('wineFormTitle').textContent = 'Wein bearbeiten';
+          document.getElementById('inputWineId').value = wine.id;
+          document.getElementById('inputWineName').value = wine.name || '';
+          document.getElementById('inputWineWinery').value = wine.winery || '';
+          document.getElementById('inputWineVintage').value = wine.vintage != null ? wine.vintage : 2021;
+          document.getElementById('inputWinePrice').value = Number(wine.price || 0).toFixed(2);
+          document.getElementById('inputWineQty').value = wine.quantity != null ? wine.quantity : 1;
+          document.getElementById('inputWineRegion').value = wine.region || '';
+          document.getElementById('inputWineNotes').value = wine.notes || '';
+          document.getElementById('inputWinePhoto').value = wine.photo || '';
+
+          if (wine.photo && wine.photo.indexOf('data:image/') === 0) {
+            document.getElementById('photoPreviewImg').src = wine.photo;
+            document.getElementById('photoPreviewBox').classList.remove('hidden');
+          }
+
+          window.selectWineType(wine.type || 'Rotwein');
+          window.selectWineStars(wine.stars || 4);
+          showModal('wineFormModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.closeWineFormModal = function () {
+        try {
+          hideModal('wineFormModal');
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.selectWineType = function (type) {
+        try {
+          document.getElementById('inputWineType').value = type;
+          var btns = document.querySelectorAll('.type-opt');
+          for (var i = 0; i < btns.length; i++) {
+            var active = btns[i].getAttribute('data-wtype') === type;
+            btns[i].classList.toggle('is-selected', active);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.selectWineStars = function (stars) {
+        try {
+          var s = Math.max(1, Math.min(5, Number(stars) || 4));
+          document.getElementById('inputWineStars').value = s;
+          document.getElementById('starRatingText').textContent = s + ' ★';
+          var btns = document.querySelectorAll('.star-btn');
+          for (var i = 0; i < btns.length; i++) {
+            var val = Number(btns[i].getAttribute('data-star'));
+            btns[i].classList.toggle('is-active', val <= s);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.removeCurrentPhoto = function () {
+        try {
+          document.getElementById('inputWinePhoto').value = '';
+          document.getElementById('photoPreviewImg').src = '';
+          document.getElementById('photoPreviewBox').classList.add('hidden');
+          document.getElementById('scannerNoticeBanner').classList.add('hidden');
+          appState.lastCompressedBase64 = '';
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.saveWineEntry = function (event) {
+        try {
+          if (event) event.preventDefault();
+          var id = document.getElementById('inputWineId').value.trim();
+          var name = document.getElementById('inputWineName').value.trim();
+          var winery = document.getElementById('inputWineWinery').value.trim();
+          if (!name && !winery) {
+            showToast('Bitte gib mindestens einen Weinnamen ein.', 'error');
+            return;
+          }
+
+          var entry = {
+            id: id || ('wine-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
+            name: name || winery,
+            winery: winery,
+            vintage: parseInt(document.getElementById('inputWineVintage').value, 10) || 0,
+            type: document.getElementById('inputWineType').value || 'Rotwein',
+            price: Math.max(0, parseFloat(document.getElementById('inputWinePrice').value) || 0),
+            quantity: Math.max(0, parseInt(document.getElementById('inputWineQty').value, 10) || 0),
+            stars: Math.max(1, Math.min(5, parseInt(document.getElementById('inputWineStars').value, 10) || 4)),
+            region: document.getElementById('inputWineRegion').value.trim(),
+            notes: document.getElementById('inputWineNotes').value.trim(),
+            photo: document.getElementById('inputWinePhoto').value || ''
+          };
+
+          if (id) {
+            var idx = appState.wines.findIndex(function (w) { return w.id === id; });
+            if (idx !== -1) appState.wines[idx] = entry;
+            else appState.wines.unshift(entry);
+            showToast('Änderungen gespeichert!', 'success');
+          } else {
+            appState.wines.unshift(entry);
+            showToast(getDisplayTitle(entry) + ' eingelagert!', 'success');
+          }
+
+          saveWinesToDisk();
+          hideModal('wineFormModal');
+          renderAll();
+        } catch (err) {
+          showToast('Speichern fehlgeschlagen: ' + err.message, 'error');
+        }
+      };
+
+      // Detail-Modal
+      window.openWineDetailModal = function (id) {
+        try {
+          var w = appState.wines.find(function (item) { return item.id === id; });
+          if (!w) return;
+          var qty = Math.max(0, Number(w.quantity) || 0);
+          var totalVal = qty * (Number(w.price) || 0);
+          var vintage = w.vintage && Number(w.vintage) > 0 ? w.vintage : 'NV';
+          var title = getDisplayTitle(w);
+
+          var photoHtml = (w.photo && w.photo.indexOf('data:image/') === 0)
+            ? '<img src="' + w.photo + '" alt="' + escapeHtml(title) + '" style="width:78px;height:106px;object-fit:cover;border-radius:12px;border:1px solid var(--border-wood);flex-shrink:0;" />'
+            : '';
+
+          var card = document.getElementById('wineDetailContent');
+          card.innerHTML =
+            '<div class="modal-header">' +
+              '<div>' +
+                '<span class="badge-type" style="margin-right:6px;">' + escapeHtml(w.type) + '</span>' +
+                '<span class="badge-vintage">' + vintage + '</span>' +
+              '</div>' +
+              '<button type="button" class="close-btn" onclick="closeWineDetailModal()">✕</button>' +
+            '</div>' +
+            '<div class="modal-body">' +
+              '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+                photoHtml +
+                '<div>' +
+                  '<h2 style="margin:0;font-family:Georgia,serif;font-size:1.25rem;">' + escapeHtml(title) + '</h2>' +
+                  '<p style="margin:4px 0 0 0;font-size:0.84rem;color:var(--muted);">' + escapeHtml(w.region || 'Region nicht angegeben') + '</p>' +
+                  '<div style="margin-top:6px;color:var(--gold);font-weight:700;">' + renderStarsString(w.stars) + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="grid-3">' +
+                '<div style="background:var(--bg-input);border:1px solid var(--border-wood);border-radius:12px;padding:10px;">' +
+                  '<div style="font-size:0.7rem;color:var(--muted);">Preis / Fl.</div>' +
+                  '<div style="font-weight:700;margin-top:2px;">' + formatEuro(w.price) + '</div>' +
+                '</div>' +
+                '<div style="background:var(--bg-input);border:1px solid var(--border-wood);border-radius:12px;padding:10px;">' +
+                  '<div style="font-size:0.7rem;color:var(--muted);">Bestand</div>' +
+                  '<div style="font-weight:700;margin-top:2px;">' + qty + ' Flaschen</div>' +
+                '</div>' +
+                '<div style="background:var(--bg-input);border:1px solid var(--border-wood);border-radius:12px;padding:10px;">' +
+                  '<div style="font-size:0.7rem;color:var(--muted);">Gesamtwert</div>' +
+                  '<div style="font-weight:700;color:var(--gold);margin-top:2px;">' + formatEuro(totalVal) + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="background:var(--bg-input);border:1px solid var(--border-wood);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">' +
+                '<span style="font-size:0.82rem;font-weight:600;">Flaschenbestand anpassen</span>' +
+                '<div class="qty-stepper">' +
+                  '<button type="button" class="qty-btn minus" onclick="changeBottleQty(\'' + w.id + '\', -1)">&minus;</button>' +
+                  '<span class="qty-count" style="padding:0 10px;">' + qty + '</span>' +
+                  '<button type="button" class="qty-btn plus" onclick="changeBottleQty(\'' + w.id + '\', 1)">+</button>' +
+                '</div>' +
+              '</div>' +
+              (w.notes
+                ? '<div style="background:var(--bg-input);border:1px solid var(--border-wood);border-radius:12px;padding:10px 12px;">' +
+                    '<div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px;">Geschmacksprofil / Notizen</div>' +
+                    '<div style="font-size:0.84rem;">' + escapeHtml(w.notes) + '</div>' +
+                  '</div>'
+                : '') +
+              '<div class="modal-footer" style="justify-content:space-between;">' +
+                '<button type="button" class="btn btn-danger" onclick="confirmDeleteWine(\'' + w.id + '\')">Löschen</button>' +
+                '<button type="button" class="btn btn-gold" onclick="openEditWineModal(\'' + w.id + '\')">Bearbeiten</button>' +
+              '</div>' +
+            '</div>';
+
+          showModal('wineDetailModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.closeWineDetailModal = function () {
+        hideModal('wineDetailModal');
+      };
+
+      window.confirmDeleteWine = function (id) {
+        try {
+          var w = appState.wines.find(function (item) { return item.id === id; });
+          if (!w) return;
+          document.getElementById('confirmModalTitle').textContent = 'Wein löschen?';
+          document.getElementById('confirmModalText').textContent = 'Möchtest du „' + getDisplayTitle(w) + '“ wirklich entfernen?';
+          document.getElementById('confirmModalOkBtn').onclick = function () {
+            appState.wines = appState.wines.filter(function (item) { return item.id !== id; });
+            saveWinesToDisk();
+            hideModal('confirmModal');
+            hideModal('wineDetailModal');
+            renderAll();
+            showToast('Wein entfernt.', 'info');
+          };
+          showModal('confirmModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      // =====================================================================
+      // 5. CLIENTSEITIGE CANVAS-KOMPRIMIERUNG & GEMINI VISION AUTO-FALLBACK
+      // =====================================================================
+      function compressImageFile(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onerror = function () { reject(new Error('Foto konnte nicht gelesen werden')); };
+          reader.onload = function (e) {
+            var img = new Image();
+            img.onerror = function () { reject(new Error('Bildformat nicht unterstützt')); };
+            img.onload = function () {
+              // 1) API-Upload Bild: max. 1024px, JPEG 0.8
+              var apiUrl = scaleImageToJpeg(img, 1024, 0.8);
+              // 2) Speicher-Thumbnail: max. 320px, JPEG 0.72
+              var thumbUrl = scaleImageToJpeg(img, 320, 0.72);
+              resolve({
+                previewUrl: apiUrl,
+                base64: apiUrl.split(',')[1],
+                thumbUrl: thumbUrl
+              });
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function scaleImageToJpeg(img, maxDim, quality) {
+        var w = img.width;
+        var h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL('image/jpeg', quality);
+      }
+
+      window.handlePhotoInputChange = function (event) {
+        try {
+          var file = event && event.target && event.target.files ? event.target.files[0] : null;
+          if (!file) return;
+          event.target.value = '';
+
+          // Formular-Modal öffnen, falls Foto direkt aus der oberen Leiste gestartet wurde
+          var formModal = document.getElementById('wineFormModal');
+          if (!formModal.classList.contains('is-open')) {
+            resetFormFields();
+            document.getElementById('wineFormTitle').textContent = '📸 Foto-Scan & Einlagern';
+            showModal('wineFormModal');
+          }
+
+          compressImageFile(file).then(function (res) {
+            document.getElementById('inputWinePhoto').value = res.thumbUrl;
+            document.getElementById('photoPreviewImg').src = res.previewUrl;
+            document.getElementById('photoPreviewBox').classList.remove('hidden');
+            document.getElementById('scannerNoticeBanner').classList.add('hidden');
+            document.getElementById('multiWineBox').classList.add('hidden');
+            appState.lastCompressedBase64 = res.base64;
+
+            runVisionScan(res.base64);
+          }).catch(function (err) {
+            showToast(err.message, 'error');
+          });
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      function fetchAvailableGeminiModels(apiKey) {
+        var url = 'https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey);
+        return fetch(url).then(function (res) {
+          if (!res.ok) {
+            return res.json().catch(function () { return {}; }).then(function (data) {
+              var msg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
+              var err = new Error(msg);
+              err.status = res.status;
+              throw err;
+            });
+          }
+          return res.json();
+        }).then(function (data) {
+          var list = Array.isArray(data.models) ? data.models : [];
+          return list
+            .filter(function (m) {
+              return Array.isArray(m.supportedGenerationMethods) &&
+                m.supportedGenerationMethods.indexOf('generateContent') !== -1;
+            })
+            .map(function (m) {
+              return String(m.name || '').replace(/^models\//, '');
+            })
+            .filter(function (name) {
+              var low = name.toLowerCase();
+              if (low.indexOf('gemini') === -1) return false;
+              if (/embedding|imagen|veo|tts|audio|robotics|aqa|image|live/i.test(low)) return false;
+              return true;
+            });
+        });
+      }
+
+      function executeGeminiWithAutoFallback(apiKey, payload, onProgress) {
+        if (!apiKey) {
+          return Promise.reject(new Error('Kein API-Key hinterlegt'));
+        }
+
+        if (onProgress) onProgress('Prüfe verfügbare Gemini-Modelle...');
+
+        return fetchAvailableGeminiModels(apiKey)
+          .catch(function (err) {
+            var m = String(err.message || '').toLowerCase();
+            if (err.status === 403 || m.indexOf('api_key_invalid') !== -1 || m.indexOf('api key not valid') !== -1) {
+              throw new Error('Ungültiger API-Key – bitte prüfen.');
+            }
+            return [];
+          })
+          .then(function (discovered) {
+            var candidates = [];
+            var lastGood = localStorage.getItem(STORAGE_MODEL_KEY) || '';
+
+            function addUnique(modelName) {
+              if (modelName && candidates.indexOf(modelName) === -1) {
+                candidates.push(modelName);
+              }
+            }
+
+            if (lastGood) addUnique(lastGood);
+            PREFERRED_MODELS.forEach(addUnique);
+            discovered.filter(function (n) { return /flash/i.test(n); }).forEach(addUnique);
+            discovered.forEach(addUnique);
+
+            var index = 0;
+            var lastErr = 'Alle Modelle momentan ausgelastet';
+
+            function tryNextModel() {
+              if (index >= candidates.length) {
+                return Promise.reject(new Error(lastErr));
+              }
+              var modelName = candidates[index];
+              index += 1;
+
+              if (onProgress) {
+                onProgress(index === 1 ? ('Frage ' + modelName + '...') : ('Wechsle automatisch auf ' + modelName + '...'));
+              }
+
+              var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+                encodeURIComponent(modelName) + ':generateContent?key=' + encodeURIComponent(apiKey);
+
+              return fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              }).then(function (res) {
+                if (res.ok) {
+                  return res.json().then(function (json) {
+                    try {
+                      localStorage.setItem(STORAGE_MODEL_KEY, modelName);
+                      updateScannerStatusUI();
+                    } catch (e) {
+                      // Ignorieren
+                    }
+                    return { data: json, model: modelName };
+                  });
+                }
+
+                return res.json().catch(function () { return {}; }).then(function (errJson) {
+                  var msg = (errJson && errJson.error && errJson.error.message) ? errJson.error.message : ('HTTP ' + res.status);
+                  lastErr = modelName + ': ' + msg;
+                  var low = msg.toLowerCase();
+
+                  if (res.status === 403 || low.indexOf('api_key_invalid') !== -1 || low.indexOf('api key not valid') !== -1) {
+                    throw new Error('Ungültiger API-Key (' + msg + ')');
+                  }
+
+                  return tryNextModel();
+                });
+              }).catch(function (netErr) {
+                if (netErr && String(netErr.message || '').indexOf('Ungültiger API-Key') === 0) {
+                  throw netErr;
+                }
+                lastErr = netErr.message || 'Netzwerkfehler';
+                return tryNextModel();
+              });
+            }
+
+            return tryNextModel();
+          });
+      }
+
+      function runVisionScan(base64Jpeg) {
+        var apiKey = getStoredApiKey();
+        var loading = document.getElementById('scanLoadingLayer');
+        var subText = document.getElementById('scanLoadingSub');
+        var banner = document.getElementById('scannerNoticeBanner');
+
+        if (!apiKey) {
+          banner.className = 'info-banner';
+          banner.innerHTML = '<strong>Foto übernommen!</strong> Für die automatische Erkennung hinterlege unter <button type="button" onclick="openScannerSettingsModal()" style="color:var(--gold);font-weight:700;background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;">⚙️ KI-Scanner</button> deinen Google AI Studio Key.';
+          banner.classList.remove('hidden');
+          return;
+        }
+
+        loading.classList.remove('hidden');
+        banner.classList.add('hidden');
+
+        var prompt =
+          'Analysiere dieses Foto einer Weinflasche, eines Etiketts oder einer Weinrechnung. ' +
+          'Antworte ausschließlich mit einem JSON-Objekt im Format {"wines":[...]}. ' +
+          'Felder pro Wein: ' +
+          '"name" (Weinname ohne Weingut), ' +
+          '"winery" (Weingut/Bodega), ' +
+          '"vintage" (Jahrgang als Zahl, 0 falls ohne), ' +
+          '"type" (genau "Rotwein", "Weißwein", "Rosé" oder "Schaumwein"), ' +
+          '"region" (Region und Land), ' +
+          '"notes" (Geschmacksprofil/Holzausbau auf Deutsch, z.B. Barrique, Vanille), ' +
+          '"stars" (Qualität 1 bis 5), ' +
+          '"price" (geschätzter oder abgelesener Preis in EUR als Zahl), ' +
+          '"quantity" (Anzahl Flaschen, Standard 1).';
+
+        var payload = {
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType: 'image/jpeg', data: base64Jpeg } }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        };
+
+        executeGeminiWithAutoFallback(apiKey, payload, function (step) {
+          if (subText) subText.textContent = step;
+        }).then(function (result) {
+          loading.classList.add('hidden');
+          var rawText = result && result.data && result.data.candidates &&
+            result.data.candidates[0] && result.data.candidates[0].content &&
+            result.data.candidates[0].content.parts && result.data.candidates[0].content.parts[0]
+            ? result.data.candidates[0].content.parts[0].text : '';
+
+          var clean = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+          var parsed = JSON.parse(clean);
+          var wines = Array.isArray(parsed.wines) ? parsed.wines : (Array.isArray(parsed) ? parsed : []);
+
+          if (wines.length === 0) {
+            showToast('Kein Wein eindeutig erkannt – bitte manuell ergänzen.', 'info');
+            return;
+          }
+
+          applyDetectedWine(wines[0]);
+
+          if (wines.length > 1) {
+            appState.detectedBatch = wines;
+            renderBatchList(wines);
+            showToast(wines.length + ' Weine erkannt (' + result.model + ')!', 'success');
+          } else {
+            showToast('Erkannt (' + result.model + '): ' + (wines[0].name || 'Wein'), 'success');
+          }
+        }).catch(function (err) {
+          loading.classList.add('hidden');
+          banner.className = 'info-banner is-error';
+          banner.innerHTML = '<strong>Foto gespeichert.</strong> KI-Erkennung meldet: ' + escapeHtml(err.message);
+          banner.classList.remove('hidden');
+        });
+      }
+
+      function applyDetectedWine(w) {
+        document.getElementById('inputWineName').value = w.name || '';
+        document.getElementById('inputWineWinery').value = w.winery || '';
+        document.getElementById('inputWineVintage').value = Number(w.vintage) || 0;
+        document.getElementById('inputWinePrice').value = (Number(w.price) || 12.90).toFixed(2);
+        document.getElementById('inputWineQty').value = Math.max(1, Number(w.quantity) || 1);
+        document.getElementById('inputWineRegion').value = w.region || '';
+        document.getElementById('inputWineNotes').value = w.notes || '';
+        window.selectWineType(WINE_STYLES[w.type] ? w.type : 'Rotwein');
+        window.selectWineStars(w.stars || w.quality || 4);
+      }
+
+      function renderBatchList(wines) {
+        var box = document.getElementById('multiWineBox');
+        var list = document.getElementById('multiWineList');
+        document.getElementById('multiWineTitle').textContent = wines.length + ' Weine auf dem Foto erkannt:';
+
+        list.innerHTML = wines.map(function (w, i) {
+          var label = (w.winery ? w.winery + ' – ' : '') + (w.name || 'Wein');
+          return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-card);border:1px solid var(--border-wood);border-radius:8px;padding:7px 9px;font-size:0.75rem;">' +
+            '<div style="min-width:0;">' +
+              '<div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(label) + '</div>' +
+              '<div style="color:var(--muted);">' + (w.quantity || 1) + '× · ' + formatEuro(w.price) + '</div>' +
+            '</div>' +
+            '<button type="button" class="mini-btn" onclick="selectBatchItem(' + i + ')">Übernehmen</button>' +
+          '</div>';
+        }).join('');
+
+        box.classList.remove('hidden');
+      }
+
+      window.selectBatchItem = function (idx) {
+        try {
+          if (appState.detectedBatch[idx]) {
+            applyDetectedWine(appState.detectedBatch[idx]);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.importAllDetectedBatch = function () {
+        try {
+          if (!appState.detectedBatch || appState.detectedBatch.length === 0) return;
+          var sharedPhoto = document.getElementById('inputWinePhoto').value || '';
+          appState.detectedBatch.forEach(function (w, idx) {
+            appState.wines.unshift({
+              id: 'wine-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).slice(2, 5),
+              name: w.name || w.winery || 'Wein',
+              winery: w.winery || '',
+              vintage: Number(w.vintage) || 0,
+              type: WINE_STYLES[w.type] ? w.type : 'Rotwein',
+              region: w.region || '',
+              price: Math.max(0, Number(w.price) || 0),
+              quantity: Math.max(1, Number(w.quantity) || 1),
+              stars: Math.max(1, Math.min(5, Number(w.stars || w.quality) || 4)),
+              notes: w.notes || '',
+              photo: idx === 0 ? sharedPhoto : ''
+            });
+          });
+          var count = appState.detectedBatch.length;
+          appState.detectedBatch = [];
+          saveWinesToDisk();
+          hideModal('wineFormModal');
+          renderAll();
+          showToast(count + ' Weine direkt eingelagert!', 'success');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      // =====================================================================
+      // 6. KI-SCANNER EINSTELLUNGEN (API-KEY & VERBINDUNGSTEST)
+      // =====================================================================
+      window.openScannerSettingsModal = function () {
+        try {
+          var inp = document.getElementById('geminiApiKeyInput');
+          inp.value = getStoredApiKey();
+          inp.type = 'password';
+          document.getElementById('toggleKeyVisBtn').textContent = 'Zeigen';
+          document.getElementById('apiTestFeedback').classList.add('hidden');
+          showModal('scannerSettingsModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.closeScannerSettingsModal = function () {
+        hideModal('scannerSettingsModal');
+      };
+
+      window.toggleApiKeyMask = function () {
+        try {
+          var inp = document.getElementById('geminiApiKeyInput');
+          var btn = document.getElementById('toggleKeyVisBtn');
+          if (inp.type === 'password') {
+            inp.type = 'text';
+            btn.textContent = 'Verbergen';
+          } else {
+            inp.type = 'password';
+            btn.textContent = 'Zeigen';
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      window.saveGeminiApiKey = function () {
+        try {
+          var val = document.getElementById('geminiApiKeyInput').value.replace(/\s+/g, '');
+          if (val) {
+            localStorage.setItem(STORAGE_APIKEY_KEY, val);
+            showToast('API-Key lokal gespeichert!', 'success');
+          } else {
+            localStorage.removeItem(STORAGE_APIKEY_KEY);
+            showToast('API-Key entfernt.', 'info');
+          }
+          updateScannerStatusUI();
+          hideModal('scannerSettingsModal');
+
+          if (val && appState.lastCompressedBase64 && document.getElementById('wineFormModal').classList.contains('is-open')) {
+            runVisionScan(appState.lastCompressedBase64);
+          }
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.deleteStoredApiKey = function () {
+        try {
+          document.getElementById('geminiApiKeyInput').value = '';
+          localStorage.removeItem(STORAGE_APIKEY_KEY);
+          localStorage.removeItem(STORAGE_MODEL_KEY);
+          updateScannerStatusUI();
+          var fb = document.getElementById('apiTestFeedback');
+          fb.className = 'info-banner';
+          fb.textContent = 'Gespeicherter API-Key wurde gelöscht.';
+          fb.classList.remove('hidden');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.testGeminiApiKey = function () {
+        try {
+          var val = document.getElementById('geminiApiKeyInput').value.replace(/\s+/g, '');
+          var fb = document.getElementById('apiTestFeedback');
+          var btn = document.getElementById('testKeyBtn');
+
+          if (!val) {
+            fb.className = 'info-banner is-error';
+            fb.textContent = 'Bitte füge zuerst deinen Google AI Studio Key ein.';
+            fb.classList.remove('hidden');
+            return;
+          }
+
+          btn.disabled = true;
+          btn.textContent = 'Teste...';
+          fb.className = 'info-banner';
+          fb.textContent = 'Prüfe verfügbare Gemini-Modelle...';
+          fb.classList.remove('hidden');
+
+          var pingPayload = {
+            contents: [{ role: 'user', parts: [{ text: 'Antworte mit OK' }] }]
+          };
+
+          executeGeminiWithAutoFallback(val, pingPayload, function (step) {
+            fb.textContent = step;
+          }).then(function (res) {
+            localStorage.setItem(STORAGE_APIKEY_KEY, val);
+            updateScannerStatusUI();
+            fb.className = 'info-banner is-success';
+            fb.innerHTML = '✅ <strong>Verbindung erfolgreich!</strong> Aktives Modell: <code>' + escapeHtml(res.model) + '</code> (Auto-Fallback bereit)';
+          }).catch(function (err) {
+            fb.className = 'info-banner is-error';
+            fb.textContent = '❌ Verbindung fehlgeschlagen: ' + err.message;
+          }).finally(function () {
+            btn.disabled = false;
+            btn.textContent = 'Verbindung testen';
+          });
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      // =====================================================================
+      // 7. BACKUP EXPORT, IMPORT & RESET
+      // =====================================================================
+      window.openBackupModal = function () {
+        showModal('backupModal');
+      };
+
+      window.closeBackupModal = function () {
+        hideModal('backupModal');
+      };
+
+      window.exportCellarJson = function () {
+        try {
+          var jsonStr = JSON.stringify(appState.wines, null, 2);
+          var blob = new Blob([jsonStr], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          var dateStr = new Date().toISOString().slice(0, 10);
+          a.href = url;
+          a.download = 'mein-weinkeller-' + dateStr + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          hideModal('backupModal');
+          showToast('JSON-Backup heruntergeladen!', 'success');
+        } catch (err) {
+          showToast('Export fehlgeschlagen: ' + err.message, 'error');
+        }
+      };
+
+      window.handleBackupImportChange = function (event) {
+        try {
+          var file = event && event.target && event.target.files ? event.target.files[0] : null;
+          if (!file) return;
+          event.target.value = '';
+
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              var parsed = JSON.parse(e.target.result);
+              if (!Array.isArray(parsed)) throw new Error('Ungültige Backup-Datei');
+              appState.wines = parsed;
+              saveWinesToDisk();
+              hideModal('backupModal');
+              renderAll();
+              showToast(parsed.length + ' Weine aus Backup geladen!', 'success');
+            } catch (parseErr) {
+              showToast('Backup ungültig: ' + parseErr.message, 'error');
+            }
+          };
+          reader.readAsText(file);
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.openConfirmDialog = function (mode) {
+        try {
+          hideModal('backupModal');
+          var okBtn = document.getElementById('confirmModalOkBtn');
+          if (mode === 'reset') {
+            document.getElementById('confirmModalTitle').textContent = 'Startbestand laden?';
+            document.getElementById('confirmModalText').textContent = 'Dein aktuelles Weinregal wird auf die 6 Beispiel-Weine zurückgesetzt.';
+            okBtn.onclick = function () {
+              appState.wines = JSON.parse(JSON.stringify(STARTER_WINES));
+              saveWinesToDisk();
+              hideModal('confirmModal');
+              renderAll();
+              showToast('Startbestand wiederhergestellt!', 'success');
+            };
+          } else {
+            document.getElementById('confirmModalTitle').textContent = 'Regal komplett leeren?';
+            document.getElementById('confirmModalText').textContent = 'Alle Flaschen werden entfernt. Exportiere vorher am besten ein JSON-Backup.';
+            okBtn.onclick = function () {
+              appState.wines = [];
+              saveWinesToDisk();
+              hideModal('confirmModal');
+              renderAll();
+              showToast('Weinregal geleert.', 'info');
+            };
+          }
+          showModal('confirmModal');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      };
+
+      window.closeConfirmDialog = function () {
+        hideModal('confirmModal');
+      };
+
+      // =====================================================================
+      // 8. INITIALISIERUNG BEIM SEITENSTART
+      // =====================================================================
+      function bootstrap() {
+        try {
+          generateHomeScreenIcons();
+          loadWinesFromDisk();
+          updateScannerStatusUI();
+          renderAll();
+
+          var resizeTimer = null;
+          window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+              if (appState.viewMode === 'rack') {
+                renderViewport();
+              }
+            }, 140);
+          });
+        } catch (err) {
+          showToast('Startfehler: ' + err.message, 'error');
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrap);
+      } else {
+        bootstrap();
+      }
+    })();
+  </script>
+</body>
+</html>
